@@ -33,7 +33,8 @@ export function createCalendarApi(fetchImpl = globalThis.fetch) {
 export function buildCalendarEvent(input, timeZone, category) {
   const start = new Date(`${input.startDate}T${input.startTime}`);
   const end = new Date(`${input.endDate}T${input.endTime}`);
-  const event = { summary: String(input.summary).trim(), start: { dateTime: start.toISOString(), timeZone }, end: { dateTime: end.toISOString(), timeZone }, colorId: String(category.colorId), eventType: "default" };
+  const localDateTime = (value) => value.toISOString().replace(".000Z", "");
+  const event = { summary: String(input.summary).trim(), start: { dateTime: localDateTime(start), timeZone }, end: { dateTime: localDateTime(end), timeZone }, colorId: String(category.colorId), eventType: "default" };
   if (input.description) event.description = input.description;
   if (input.location) event.location = input.location;
   return event;

@@ -6,7 +6,10 @@ import { createStorage } from "../modules/storage.js";
 const form = document.querySelector("#work-log-form");
 const message = document.querySelector("#message");
 const reauthenticate = document.querySelector("#reauthenticate");
-const today = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+let calendars = [];
+let lastCalendarId = null;
 for (const field of ["startDate", "endDate"]) document.querySelector(`#${field}`).value = today;
 
 loadCalendarData();
@@ -16,7 +19,7 @@ let categories = [];
 let colors = [];
 
 async function loadCategories() {
-  try { const data = await createStorage().load(); categories = data.categories; renderCategories(); if (data.settings.lastCalendarId) document.querySelector("#calendarId").value = data.settings.lastCalendarId; document.querySelector("#location").value = data.settings.lastLocation ?? ""; } catch (error) { message.textContent = error.message; }
+  try { const data = await createStorage().load(); categories = data.categories; lastCalendarId = data.settings.lastCalendarId; renderCategories(); document.querySelector("#location").value = data.settings.lastLocation ?? ""; } catch (error) { message.textContent = error.message; }
 }
 
 function renderCategories() {
@@ -35,6 +38,7 @@ function loadCalendarData() {
       return;
     }
     reauthenticate.hidden = true;
+    calendars = result.calendars;
     const select = document.querySelector("#calendarId");
     colors = result.colors;
     const colorSelect = document.querySelector("#categoryColor");
@@ -45,6 +49,7 @@ function loadCalendarData() {
       option.textContent = calendar.name;
       select.append(option);
     }
+    if (lastCalendarId && result.calendars.some(({ id }) => id === lastCalendarId)) select.value = lastCalendarId;
     message.textContent = "カレンダーを読み込みました。";
   });
 }
@@ -54,14 +59,14 @@ reauthenticate.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "load-calendar-data", interactive: true }, (result) => {
     reauthenticate.disabled = false;
     if (!result?.ok) { message.textContent = result?.message ?? "再認証に失敗しました。"; return; }
-    reauthenticate.hidden = true; message.textContent = "再認証しました。";
+    reauthenticate.hidden = true; calendars = result.calendars; message.textContent = "再認証しました。";
   });
 });
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const input = Object.fromEntries(new FormData(form));
-  const errors = validateWorkLog(input);
+  const errors = validateWorkLog(input, { calendars, categories });
   document.querySelectorAll(".error").forEach((node) => node.remove());
   if (Object.keys(errors).length > 0) {
     message.textContent = "入力内容を確認してください。";
