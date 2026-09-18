@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       const auth = createAuth();
       const api = createCalendarApi();
-      const token = await auth.getToken(false);
+      const token = await auth.getToken(message.interactive === true);
       const [calendars, colors] = await Promise.all([api.listWritableCalendars(token), api.listEventColors(token)]);
       sendResponse({ ok: true, calendars, colors });
     } catch (error) {
