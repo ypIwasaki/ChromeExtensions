@@ -23,6 +23,18 @@ export function createCalendarApi(fetchImpl = globalThis.fetch) {
     async listEventColors(token) {
       const data = await request("/colors", token);
       return Object.entries(data.event ?? {}).map(([id, value]) => ({ id, backgroundColor: value.background, foregroundColor: value.foreground }));
+    },
+    async insertEvent(token, calendarId, event) {
+      return request(`/calendars/${encodeURIComponent(calendarId)}/events`, token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(event) });
     }
   };
+}
+
+export function buildCalendarEvent(input, timeZone, category) {
+  const start = new Date(`${input.startDate}T${input.startTime}`);
+  const end = new Date(`${input.endDate}T${input.endTime}`);
+  const event = { summary: String(input.summary).trim(), start: { dateTime: start.toISOString(), timeZone }, end: { dateTime: end.toISOString(), timeZone }, colorId: String(category.colorId), eventType: "default" };
+  if (input.description) event.description = input.description;
+  if (input.location) event.location = input.location;
+  return event;
 }
