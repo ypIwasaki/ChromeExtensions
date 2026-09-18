@@ -1,4 +1,5 @@
 import { validateWorkLog } from "../modules/validation.js";
+import { buildCalendarEvent } from "../modules/calendar-api.js";
 
 const form = document.querySelector("#work-log-form");
 const message = document.querySelector("#message");
@@ -42,8 +43,12 @@ form.addEventListener("submit", (event) => {
     }
     return;
   }
-  message.textContent = "入力を受け付けました。予定登録は次の段階で追加します。";
+  message.textContent = "登録しています…";
   message.className = "";
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  chrome.runtime.sendMessage({ type: "register-work-log", input, event: buildCalendarEvent(input, timeZone, { colorId: "0" }) }, (result) => {
+    message.textContent = result?.ok ? "登録しました。" : (result?.message ?? "登録に失敗しました。");
+  });
 });
 
 document.querySelector("#summary").focus();
