@@ -5,6 +5,25 @@ const message = document.querySelector("#message");
 const today = new Date().toISOString().slice(0, 10);
 for (const field of ["startDate", "endDate"]) document.querySelector(`#${field}`).value = today;
 
+loadCalendarData();
+
+function loadCalendarData() {
+  chrome.runtime.sendMessage({ type: "load-calendar-data" }, (result) => {
+    if (chrome.runtime.lastError || !result?.ok) {
+      message.textContent = result?.message ?? "カレンダーを読み込めません。再認証してください。";
+      return;
+    }
+    const select = document.querySelector("#calendarId");
+    for (const calendar of result.calendars) {
+      const option = document.createElement("option");
+      option.value = calendar.id;
+      option.textContent = calendar.name;
+      select.append(option);
+    }
+    message.textContent = "カレンダーを読み込みました。";
+  });
+}
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const input = Object.fromEntries(new FormData(form));
