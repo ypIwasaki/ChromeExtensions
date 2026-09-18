@@ -7,5 +7,5 @@
 <label for="description">作業内容・メモ</label><textarea id="description" name="description"></textarea>
 <label for="calendarId">登録先カレンダー <span>*</span></label><select id="calendarId" name="calendarId"><option value="">カレンダーを選択してください</option></select>
 <label for="location">場所</label><input id="location" name="location">
-<label for="categoryId">作業カテゴリ <span>*</span></label><select id="categoryId" name="categoryId"><option value="">カテゴリを追加してください</option></select>
-<button type="submit">登録</button></form></main><script type="module" src="popup.js"></script></body></html>
+<label for="categoryId">作業カテゴリ <span>*</span></label><select id="categoryId" name="categoryId"><option value="">カテゴリを追加してください</option></select><div><button type="button" id="add-category">カテゴリ追加</button><button type="button" id="delete-category" disabled>削除</button></div>
+<button type="submit">登録</button></form><dialog id="category-dialog"><form method="dialog" id="category-form"><label for="categoryName">カテゴリ名</label><input id="categoryName" required><label for="categoryColor">予定色</label><select id="categoryColor" required></select><button value="cancel">キャンセル</button><button id="save-category" value="default">保存</button></form></dialog></main><script type="module" src="popup.js"></script></body></html>

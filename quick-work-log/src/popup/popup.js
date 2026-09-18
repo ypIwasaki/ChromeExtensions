@@ -1,5 +1,7 @@
 import { validateWorkLog } from "../modules/validation.js";
 import { buildCalendarEvent } from "../modules/calendar-api.js";
+import { addCategory, removeCategory } from "../modules/categories.js";
+import { createStorage } from "../modules/storage.js";
 
 const form = document.querySelector("#work-log-form");
 const message = document.querySelector("#message");
@@ -7,6 +9,21 @@ const today = new Date().toISOString().slice(0, 10);
 for (const field of ["startDate", "endDate"]) document.querySelector(`#${field}`).value = today;
 
 loadCalendarData();
+loadCategories();
+
+let categories = [];
+let colors = [];
+
+async function loadCategories() {
+  try { categories = (await createStorage().load()).categories; renderCategories(); } catch (error) { message.textContent = error.message; }
+}
+
+function renderCategories() {
+  const select = document.querySelector("#categoryId");
+  select.replaceChildren(new Option(categories.length ? "カテゴリを選択してください" : "カテゴリを追加してください", ""));
+  for (const category of categories) select.append(new Option(category.name, category.id));
+  document.querySelector("#delete-category").disabled = !select.value;
+}
 
 function loadCalendarData() {
   chrome.runtime.sendMessage({ type: "load-calendar-data" }, (result) => {
@@ -15,6 +32,9 @@ function loadCalendarData() {
       return;
     }
     const select = document.querySelector("#calendarId");
+    colors = result.colors;
+    const colorSelect = document.querySelector("#categoryColor");
+    colorSelect.replaceChildren(...colors.map((color) => new Option(color.id, color.id)));
     for (const calendar of result.calendars) {
       const option = document.createElement("option");
       option.value = calendar.id;
@@ -49,6 +69,22 @@ form.addEventListener("submit", (event) => {
   chrome.runtime.sendMessage({ type: "register-work-log", input, event: buildCalendarEvent(input, timeZone, { colorId: "0" }) }, (result) => {
     message.textContent = result?.ok ? "登録しました。" : (result?.message ?? "登録に失敗しました。");
   });
+});
+
+document.querySelector("#categoryId").addEventListener("change", (event) => { document.querySelector("#delete-category").disabled = !event.target.value; });
+document.querySelector("#add-category").addEventListener("click", () => document.querySelector("#category-dialog").showModal());
+document.querySelector("#category-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const data = await createStorage().load();
+    const updated = addCategory(data.categories, { id: crypto.randomUUID(), name: document.querySelector("#categoryName").value, colorId: document.querySelector("#categoryColor").value });
+    await createStorage().save({ ...data, categories: updated });
+    categories = updated; renderCategories(); document.querySelector("#category-dialog").close(); event.target.reset();
+  } catch (error) { message.textContent = error.message; }
+});
+document.querySelector("#delete-category").addEventListener("click", async () => {
+  const id = document.querySelector("#categoryId").value; if (!id || !confirm("選択中のカテゴリを削除しますか？")) return;
+  const data = await createStorage().load(); const updated = removeCategory(data.categories, id); await createStorage().save({ ...data, categories: updated }); categories = updated; renderCategories();
 });
 
 document.querySelector("#summary").focus();
