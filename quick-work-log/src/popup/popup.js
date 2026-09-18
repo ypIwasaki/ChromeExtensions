@@ -15,7 +15,7 @@ let categories = [];
 let colors = [];
 
 async function loadCategories() {
-  try { categories = (await createStorage().load()).categories; renderCategories(); } catch (error) { message.textContent = error.message; }
+  try { const data = await createStorage().load(); categories = data.categories; renderCategories(); if (data.settings.lastCalendarId) document.querySelector("#calendarId").value = data.settings.lastCalendarId; document.querySelector("#location").value = data.settings.lastLocation ?? ""; } catch (error) { message.textContent = error.message; }
 }
 
 function renderCategories() {
@@ -23,6 +23,7 @@ function renderCategories() {
   select.replaceChildren(new Option(categories.length ? "カテゴリを選択してください" : "カテゴリを追加してください", ""));
   for (const category of categories) select.append(new Option(category.name, category.id));
   document.querySelector("#delete-category").disabled = !select.value;
+  document.querySelector("#edit-category").disabled = !select.value;
 }
 
 function loadCalendarData() {
@@ -71,13 +72,16 @@ form.addEventListener("submit", (event) => {
   });
 });
 
-document.querySelector("#categoryId").addEventListener("change", (event) => { document.querySelector("#delete-category").disabled = !event.target.value; });
-document.querySelector("#add-category").addEventListener("click", () => document.querySelector("#category-dialog").showModal());
+document.querySelector("#categoryId").addEventListener("change", (event) => { document.querySelector("#delete-category").disabled = !event.target.value; document.querySelector("#edit-category").disabled = !event.target.value; });
+document.querySelector("#add-category").addEventListener("click", () => { document.querySelector("#category-form").dataset.editing = ""; document.querySelector("#categoryName").value = ""; document.querySelector("#category-dialog").showModal(); });
+document.querySelector("#edit-category").addEventListener("click", () => { const category = categories.find(({ id }) => id === document.querySelector("#categoryId").value); if (!category) return; document.querySelector("#category-form").dataset.editing = category.id; document.querySelector("#categoryName").value = category.name; document.querySelector("#categoryColor").value = category.colorId; document.querySelector("#category-dialog").showModal(); });
 document.querySelector("#category-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const data = await createStorage().load();
-    const updated = addCategory(data.categories, { id: crypto.randomUUID(), name: document.querySelector("#categoryName").value, colorId: document.querySelector("#categoryColor").value });
+    const form = document.querySelector("#category-form");
+    const editing = form.dataset.editing;
+    const updated = editing ? (await import("../modules/categories.js")).updateCategory(data.categories, editing, { name: document.querySelector("#categoryName").value, colorId: document.querySelector("#categoryColor").value }) : addCategory(data.categories, { id: crypto.randomUUID(), name: document.querySelector("#categoryName").value, colorId: document.querySelector("#categoryColor").value });
     await createStorage().save({ ...data, categories: updated });
     categories = updated; renderCategories(); document.querySelector("#category-dialog").close(); event.target.reset();
   } catch (error) { message.textContent = error.message; }
