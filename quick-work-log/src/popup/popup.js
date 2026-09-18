@@ -6,6 +6,7 @@ import { createStorage } from "../modules/storage.js";
 const form = document.querySelector("#work-log-form");
 const message = document.querySelector("#message");
 const reauthenticate = document.querySelector("#reauthenticate");
+const submitButton = document.querySelector("button[type=submit]");
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 let calendars = [];
@@ -83,9 +84,14 @@ form.addEventListener("submit", (event) => {
   }
   message.textContent = "登録しています…";
   message.className = "";
+  submitButton.disabled = true;
+  document.querySelectorAll("#add-category, #edit-category, #delete-category, #reauthenticate").forEach((button) => { button.disabled = true; });
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   chrome.runtime.sendMessage({ type: "register-work-log", input, event: buildCalendarEvent(input, timeZone, { colorId: "0" }) }, (result) => {
-    message.textContent = result?.ok ? "登録しました。" : (result?.message ?? "登録に失敗しました。");
+    if (result?.ok) { message.textContent = "登録しました。"; setTimeout(() => window.close(), 700); return; }
+    submitButton.disabled = false;
+    document.querySelectorAll("#add-category, #edit-category, #delete-category, #reauthenticate").forEach((button) => { button.disabled = false; });
+    message.textContent = result?.message ?? "登録に失敗しました。";
   });
 });
 
