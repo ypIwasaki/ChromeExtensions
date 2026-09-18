@@ -13,3 +13,4 @@ Chrome拡張機能の最初の動作スライスです。現段階では、カ�
 OAuthを使う段階では、`manifest.json` の仮client IDをGoogle Cloudで作成したChrome拡張機能用client IDへ置き換えます。認証情報はコミットしません。
 
 手動確認の手順は [`docs/MANUAL_TEST.md`](../docs/MANUAL_TEST.md) に記載しています。
+結果は [`docs/TEST_RESULT.md`](../docs/TEST_RESULT.md) に記録します。
